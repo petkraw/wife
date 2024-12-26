@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phantom Wallet Integration</title>
+    <script src="https://unpkg.com/@solana/web3.js@1.83.0/lib/index.iife.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f4f4f9;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        #hiddenContent {
+            margin-top: 30px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Hidden Content Platform</h1>
+    <button id="connectWallet">Connect Phantom Wallet</button>
+
+    <div id="hiddenContent">
+        <h2>Congratulations!</h2>
+        <p>You have enough tokens to view this exclusive content!</p>
+        <p>here is the wife joke of the day</p>
+        <p>My wife still hasn’t told me what my New Year’s resolutions are.</p>
+    </div>
+
+    <script>
+        const connectWalletButton = document.getElementById('connectWallet');
+        const hiddenContent = document.getElementById('hiddenContent');
+
+        let walletAddress = null;
+        const requiredTokenAmount = 100; // Set the required token amount here
+        const tokenMintAddress = "4y3oUrsJfSp431R3wJrWiaLxRPsnYtpkVJmoV2bYpBiy"; // Replace with your token's mint address
+
+        connectWalletButton.addEventListener('click', async () => {
+            if (window.solana && window.solana.isPhantom) {
+                try {
+                    console.log('Attempting to connect to Phantom Wallet...');
+                    const response = await window.solana.connect();
+                    walletAddress = response.publicKey.toString();
+                    console.log('Wallet connected:', walletAddress);
+
+                    // Check token balance
+                    console.log('Checking token balance for wallet:', walletAddress);
+                    const balance = await checkTokenBalance(walletAddress, tokenMintAddress);
+                    console.log('Token balance:', balance);
+
+                    if (balance >= requiredTokenAmount) {
+                        hiddenContent.style.display = 'block';
+                        console.log('Hidden content displayed.');
+                    } else {
+                        console.log('Insufficient tokens. Balance:', balance, 'Required:', requiredTokenAmount);
+                        alert('You do not have enough tokens to access the hidden content.');
+                    }
+                } catch (error) {
+                    console.error('Error during connection or token check:', error);
+                }
+            } else {
+                alert('Phantom Wallet not found! Please install it.');
+            }
+        });
+
+        async function checkTokenBalance(walletAddress, tokenMintAddress) {
+            const quickNodeUrl = 'https://tame-nameless-sailboat.solana-mainnet.quiknode.pro/98a9c00d7a4c176253e1fc6bb61dde0ea06ba8c9'; // Replace with your QuickNode RPC URL
+            console.log('Connecting to QuickNode RPC:', quickNodeUrl);
+
+            const connection = new solanaWeb3.Connection(quickNodeUrl);
+            const walletPublicKey = new solanaWeb3.PublicKey(walletAddress);
+            const tokenPublicKey = new solanaWeb3.PublicKey(tokenMintAddress);
+
+            try {
+                const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+                    walletPublicKey,
+                    { mint: tokenPublicKey }
+                );
+
+                console.log('Fetched token accounts:', tokenAccounts);
+
+                if (tokenAccounts.value.length > 0) {
+                    const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+                    console.log('Token balance fetched:', balance);
+                    return balance;
+                } else {
+                    console.log('No token accounts found for this wallet and mint address.');
+                    return 0; // No tokens found
+                }
+            } catch (error) {
+                console.error('Error fetching token accounts:', error);
+                return 0;
+            }
+        }
+    </script>
+</body>
+</html>
