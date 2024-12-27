@@ -1,10 +1,129 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Meine Webseite</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phantom Wallet Integration</title>
+    <script src="https://unpkg.com/@solana/web3.js@1.83.0/lib/index.iife.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f4f4f9;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        #hiddenContent {
+            margin-top: 30px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <h1>Guten Abend!</h1>
-    <p>Hier geht's zur <a href="wife.html">Wife-Seite</a>.</p>
+    <h1>Welcome to the exclusive content of the wife cult</h1>
+
+    <!-- Besucherzähler -->
+    <div style="text-align: center; margin-top: 20px;">
+        <script language="JavaScript" src="https://www.besucherzaehler-kostenlos.de/js/counter.js.php?count=1&id=dein-id&start=1&design=1e"></script>
+    </div>
+
+    <button id="connectWallet">Connect Phantom Wallet</button>
+
+    <div id="hiddenContent">
+        <h2>Congratulations!</h2>
+        <p>You have enough tokens to view this exclusive content!</p>
+        <p id="joke">Here is the joke of the day:</p>
+        <button id="loadJoke">Load Another Joke</button>
+    </div>
+
+    <script>
+        const connectWalletButton = document.getElementById('connectWallet');
+        const hiddenContent = document.getElementById('hiddenContent');
+        const jokeElement = document.getElementById('joke');
+        const loadJokeButton = document.getElementById('loadJoke');
+
+        let walletAddress = null;
+        const requiredTokenAmount = 100;
+        const tokenMintAddress = "4y3oUrsJfSp431R3wJrWiaLxRPsnYtpkVJmoV2bYpBiy";
+
+        // Function to fetch jokes from the text file
+        async function fetchJokes() {
+            try {
+                const response = await fetch('jokes.txt'); // Replace with your file path
+                const text = await response.text();
+                return text.split(/\n\s*\n/); // Split jokes by empty lines
+            } catch (error) {
+                console.error('Error fetching jokes:', error);
+                return [];
+            }
+        }
+
+        // Display a random joke
+        async function displayRandomJoke() {
+            const jokes = await fetchJokes();
+            if (jokes.length > 0) {
+                const randomIndex = Math.floor(Math.random() * jokes.length);
+                jokeElement.innerText = jokes[randomIndex];
+            } else {
+                jokeElement.innerText = 'No jokes available!';
+            }
+        }
+
+        connectWalletButton.addEventListener('click', async () => {
+            if (window.solana && window.solana.isPhantom) {
+                try {
+                    const response = await window.solana.connect();
+                    walletAddress = response.publicKey.toString();
+
+                    const balance = await checkTokenBalance(walletAddress, tokenMintAddress);
+                    if (balance >= requiredTokenAmount) {
+                        hiddenContent.style.display = 'block';
+                        await displayRandomJoke();
+                    } else {
+                        alert('You do not have enough tokens to access the hidden content.');
+                    }
+                } catch (error) {
+                    console.error('Error during connection or token check:', error);
+                }
+            } else {
+                alert('Phantom Wallet not found! Please install it.');
+            }
+        });
+
+        loadJokeButton.addEventListener('click', displayRandomJoke);
+
+        async function checkTokenBalance(walletAddress, tokenMintAddress) {
+            const quickNodeUrl = 'https://tame-nameless-sailboat.solana-mainnet.quiknode.pro/98a9c00d7a4c176253e1fc6bb61dde0ea06ba8c9';
+            const connection = new solanaWeb3.Connection(quickNodeUrl);
+            const walletPublicKey = new solanaWeb3.PublicKey(walletAddress);
+            const tokenPublicKey = new solanaWeb3.PublicKey(tokenMintAddress);
+
+            try {
+                const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+                    walletPublicKey,
+                    { mint: tokenPublicKey }
+                );
+
+                if (tokenAccounts.value.length > 0) {
+                    const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+                    return balance;
+                } else {
+                    return 0;
+                }
+            } catch (error) {
+                console.error('Error fetching token accounts:', error);
+                return 0;
+            }
+        }
+    </script>
 </body>
 </html>
